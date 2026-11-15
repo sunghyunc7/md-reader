@@ -488,12 +488,15 @@ function loadVoices(){
   const vs=synth.getVoices();if(!vs.length)return;
   st.voices=vs;
   const dl=st.dl,re=new RegExp('^'+dl,'i');
-  const mine=vs.filter(v=>re.test(v.lang)),other=vs.filter(v=>!re.test(v.lang));
+  const us=v=>/^en[-_]US/i.test(v.lang);
+  const mine=vs.filter(v=>re.test(v.lang)).sort((a,b)=>dl==='en'?us(b)-us(a):0),other=vs.filter(v=>!re.test(v.lang));
+  /* English defaults to an American voice; other English accents are used only when no en-US voice exists */
+  const pool=dl==='en'&&mine.some(us)?mine.filter(us):mine;
   const fav=dl==='ko'?/sunhi|yuna|유나/i:/ava|andrew|aria|jenny|samantha/i;
   const score=v=>(/natural/i.test(v.name)?10:/online/i.test(v.name)?6:0)+(/premium|프리미엄/i.test(v.name)?4:/enhanced|향상/i.test(v.name)?3:0)
-    +(fav.test(v.name)?1:0)+(v.localService?1:0)+(dl==='en'&&/en-US/i.test(v.lang)?1:0);
+    +(fav.test(v.name)?1:0)+(v.localService?1:0);
   const saved=store.get('voice:'+dl,'');
-  st.voice=vs.find(v=>v.voiceURI===saved)||mine.slice().sort((a,b)=>score(b)-score(a))[0]||null;
+  st.voice=vs.find(v=>v.voiceURI===saved)||pool.slice().sort((a,b)=>score(b)-score(a))[0]||null;
   const nm=v=>v.name.replace(/^Microsoft\s+/,'').replace(/\s+Online \(Natural\)/i,'').replace(/\s*-\s*[^-]*\([^)]*\)\s*$/,'');
   const opt=v=>`<option value="${esc(v.voiceURI)}"${v===st.voice?' selected':''}>${esc(nm(v))}${isNet(v)?' · '+T('online'):''}${/^ko-KR$/i.test(v.lang)?'':' ('+esc(v.lang)+')'}</option>`;
   $('#voice').innerHTML=(st.voice?'':`<option value="">${T('defVoice')}</option>`)+(mine.length?`<optgroup label="${T('lang')[dl]}">${mine.map(opt).join('')}</optgroup>`:'')+`<optgroup label="${T('other')}">${other.map(opt).join('')}</optgroup>`;
