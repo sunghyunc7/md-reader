@@ -1,8 +1,8 @@
-# md 낭독기 (md-reader)
+# md 낭독기 (ainl-md-reader)
 
 마크다운 문서를 기호 없이 소리 내어 읽어 주는 설치형 웹앱(PWA)입니다. Mac과 안드로이드에서 같은 코드로 동작합니다.
 
-- 주소: <https://sunghyunc7.github.io/md-reader/>
+- 주소: <https://sunghyunc7.github.io/ainl-md-reader/>
 - 만든 곳: AINL — AI-Native Networking Lab, KAIST
 
 ## 무엇을 하나
@@ -51,4 +51,5 @@
 
 | Rev | 일자 | 변경 내용 |
 |---|---|---|
+| 2 | 2026-11-15 | 저장소·주소 이름을 `md-reader` → `ainl-md-reader`로 변경. 예전 주소(`/md-reader/`)로 설치한 앱은 지우고 새 주소에서 다시 설치해야 함. |
 | 1 | 2026-11-15 | 최초 공개. 문장 단위 읽기와 강조, 표·코드 읽기 선택, 신경망 음성 우선 선택과 긴 문장 분할, AINL 로고·아이콘, 오프라인·공유 받기·파일 열기·화면 켜 두기. |
