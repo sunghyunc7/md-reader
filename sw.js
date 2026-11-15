@@ -1,5 +1,5 @@
 /* md 낭독기 service worker: offline cache + Android share target */
-const VERSION = 'mdr-v4';
+const VERSION = 'mdr-v5';
 const CORE = ['./', './index.html', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png',
   './icons/apple-touch-icon.png', './icons/favicon.png', './icons/ainl-mark.png'];
@@ -17,7 +17,7 @@ self.addEventListener('activate', e => {
 async function handleShare(req) {
   const fd = await req.formData();
   const f = fd.get('file');
-  let text = '', name = '공유된 텍스트';
+  let text = '', name = '';
   if (f && typeof f !== 'string' && f.size) { text = await f.text(); name = f.name || '공유된 파일'; }
   else { text = [fd.get('title'), fd.get('text')].filter(Boolean).join('\n\n'); }
   const c = await caches.open('mdr-share');

@@ -17,7 +17,7 @@
 /* VOICE: quiet, exact reading instrument — the document is the subject, controls stay out of the way
    IDEA: a printed manuscript with a proofreader's mark moving under the line being read
    PICTURE: the rendered document itself, current sentence underlined in carmine, live as it speaks
-   COLOUR and TYPE: white paper, ink #10131a, carmine marker, AINL logo blue controls; Literata + Noto Serif KR for text
+   COLOUR and TYPE: white paper, ink #10131a, carmine marker, AINL logo blue controls; Literata + Noto Serif KR for text; interface in Korean or English
    LAYOUT: sticky transport bar on top, outline at left, one reading column; outline drops under 900px */
 :root{color-scheme:light dark;
 --bg:light-dark(#ffffff,#0f1217);--ink:light-dark(#10131a,#e6e8ee);--mute:light-dark(#5b6170,#9aa1b0);
@@ -37,6 +37,7 @@ h1{font:600 32px/1.05 Literata,"Noto Serif KR",serif;margin:0;letter-spacing:-.0
 .files{display:flex;gap:8px;flex-wrap:wrap}
 .btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;border-radius:8px;border:1px solid var(--blue);background:var(--blue);color:var(--onblue);cursor:pointer;font-weight:600;font-size:15px}
 .btn.ghost{background:transparent;color:var(--blue)}
+.seg{display:inline-flex;border:1px solid var(--blue);border-radius:8px;overflow:hidden}.seg button{min-height:44px;padding:0 14px;border:0;background:transparent;color:var(--blue);font-weight:600;font-size:15px;cursor:pointer}.seg button[aria-pressed=true]{background:var(--blue);color:var(--onblue)}
 .paste{max-width:1240px;margin:0 auto;padding:0 max(5vw,16px) 16px}
 .paste textarea{width:100%;min-height:180px;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--panel);font:15px/1.5 ui-monospace,Menlo,monospace}
 .paste .row{display:flex;gap:8px;margin-top:8px}
@@ -101,7 +102,7 @@ body.notab .tbl .tag,body.nocode pre.cd .tag{display:block}
 body.notab .tbl tr[data-u],body.nocode pre.cd .s{cursor:default}
 .hint{margin-top:3em;padding-top:1em;border-top:1px solid var(--line);color:var(--mute);font-size:13px;font-family:-apple-system,"Apple SD Gothic Neo",sans-serif}
 kbd{font:12px ui-monospace,Menlo,monospace;border:1px solid var(--line);border-radius:4px;padding:1px 5px}
-body.drag::after{content:"여기에 파일을 놓으세요";position:fixed;inset:12px;z-index:9;display:grid;place-items:center;border:2px dashed var(--blue);border-radius:16px;background:color-mix(in srgb,var(--bg) 88%,transparent);font-size:22px;color:var(--blue)}
+body.drag::after{content:attr(data-drop);position:fixed;inset:12px;z-index:9;display:grid;place-items:center;border:2px dashed var(--blue);border-radius:16px;background:color-mix(in srgb,var(--bg) 88%,transparent);font-size:22px;color:var(--blue)}
 @media(max-width:900px){.wrap{grid-template-columns:minmax(0,1fr)}#toc{display:none}}
 @media(max-width:600px){.ic.sm{display:grid}.set{display:none}body.showset .set{display:flex}.top{padding-top:16px}h1{font-size:24px}.logo{height:32px}.brand{gap:12px}.r1{flex-direction:column;align-items:stretch;gap:8px}.tp{justify-content:center}
  #doc{font-size:17px}.f input[type=range]{width:110px}table{font-size:13px}}
@@ -110,44 +111,46 @@ body.drag::after{content:"여기에 파일을 놓으세요";position:fixed;inset
 </head>
 <body>
 <header class="top">
-  <div class="brand"><img class="logo" src="icons/ainl-mark.png" alt="AINL" width="102" height="40"><span class="sep"></span><div><h1>md 낭독기</h1><p class="sub" id="fname"></p></div></div>
+  <div class="brand"><img class="logo" src="icons/ainl-mark.png" alt="AINL" width="102" height="40"><span class="sep"></span><div><h1 data-t="title">md 낭독기</h1><p class="sub" id="fname"></p></div></div>
   <div class="files">
-    <label class="btn" for="file">파일 열기</label>
+    <label class="btn" for="file" data-t="open">파일 열기</label>
     <input id="file" type="file" accept=".md,.markdown,.txt,text/markdown,text/plain" hidden>
-    <button class="btn ghost" id="pasteBtn" type="button">붙여넣기</button>
+    <button class="btn ghost" id="pasteBtn" type="button" data-t="paste">붙여넣기</button>
+    <div class="seg" role="group" aria-label="Language / 언어"><button type="button" id="uiKo" lang="ko">한국어</button><button type="button" id="uiEn" lang="en">English</button></div>
   </div>
 </header>
 <section class="paste" id="paste" hidden>
-  <textarea id="pasteTa" placeholder="마크다운 텍스트를 여기에 붙여 넣으세요"></textarea>
-  <div class="row"><button class="btn" id="pasteGo" type="button">이 텍스트 읽기</button><button class="btn ghost" id="pasteX" type="button">닫기</button></div>
+  <textarea id="pasteTa" data-t-ph="ph"></textarea>
+  <div class="row"><button class="btn" id="pasteGo" type="button" data-t="pasteGo">이 텍스트 읽기</button><button class="btn ghost" id="pasteX" type="button" data-t="close">닫기</button></div>
 </section>
 <div class="bar" id="bar"><div class="in">
   <div class="r1">
     <div class="tp">
-      <button class="ic" id="prevH" type="button" title="이전 제목 (Shift+←)" aria-label="이전 제목"><svg viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6zm.5-6 8.5 6V6z"/></svg></button>
-      <button class="ic" id="prev" type="button" title="이전 문장 (←)" aria-label="이전 문장"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg></button>
-      <button class="ic big" id="play" type="button" title="재생 (Space)" aria-label="재생"></button>
-      <button class="ic" id="next" type="button" title="다음 문장 (→)" aria-label="다음 문장"><svg viewBox="0 0 24 24"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg></button>
-      <button class="ic" id="nextH" type="button" title="다음 제목 (Shift+→)" aria-label="다음 제목"><svg viewBox="0 0 24 24"><path d="m4 18 8.5-6L4 6zm9-12v12l8.5-6z"/></svg></button>
+      <button class="ic" id="prevH" type="button" data-t-aria="prevH" data-k="Shift+←"><svg viewBox="0 0 24 24"><path d="M11 18V6l-8.5 6zm.5-6 8.5 6V6z"/></svg></button>
+      <button class="ic" id="prev" type="button" data-t-aria="prev" data-k="←"><svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg></button>
+      <button class="ic big" id="play" type="button"></button>
+      <button class="ic" id="next" type="button" data-t-aria="next" data-k="→"><svg viewBox="0 0 24 24"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg></button>
+      <button class="ic" id="nextH" type="button" data-t-aria="nextH" data-k="Shift+→"><svg viewBox="0 0 24 24"><path d="m4 18 8.5-6L4 6zm9-12v12l8.5-6z"/></svg></button>
     </div>
-    <div class="meter"><div class="track"><div id="fill"></div></div><div class="mrow"><span id="pos"></span><button class="ic sm" id="setBtn" type="button" aria-label="설정 열기" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M3 6h10v2H3zm15 0h3v2h-3zM3 16h4v2H3zm9 0h9v2h-9z"/><circle cx="15.5" cy="7" r="2.6"/><circle cx="9.5" cy="17" r="2.6"/></svg></button></div></div>
+    <div class="meter"><div class="track"><div id="fill"></div></div><div class="mrow"><span id="pos"></span><button class="ic sm" id="setBtn" type="button" data-t-aria="settings" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M3 6h10v2H3zm15 0h3v2h-3zM3 16h4v2H3zm9 0h9v2h-9z"/><circle cx="15.5" cy="7" r="2.6"/><circle cx="9.5" cy="17" r="2.6"/></svg></button></div></div>
   </div>
   <div class="set">
-    <label class="f">속도 <input type="range" id="rate" min="0.6" max="2" step="0.05"><output id="rateV"></output></label>
-    <label class="f">음성 <select id="voice"><option>기본 음성</option></select></label>
-    <label class="sw"><input type="checkbox" id="tab"><span>표 읽기</span></label>
-    <label class="sw"><input type="checkbox" id="cod"><span>코드 읽기</span></label>
+    <label class="f"><span data-t="speed">속도</span> <input type="range" id="rate" min="0.6" max="2" step="0.05"><output id="rateV"></output></label>
+    <label class="f"><span data-t="rl">읽기 언어</span> <select id="rl"></select></label>
+    <label class="f"><span data-t="voice">음성</span> <select id="voice"></select></label>
+    <label class="sw"><input type="checkbox" id="tab"><span data-t="tables">표 읽기</span></label>
+    <label class="sw"><input type="checkbox" id="cod"><span data-t="code">코드 읽기</span></label>
   </div>
   <p class="msg" id="msg" hidden></p>
 </div></div>
 <main class="wrap">
-  <nav id="toc" aria-label="목차"></nav>
+  <nav id="toc"></nav>
   <div>
     <article id="doc"></article>
-    <p class="hint"><kbd>Space</kbd> 재생·일시정지 · <kbd>←</kbd><kbd>→</kbd> 문장 이동 · <kbd>Shift</kbd>+<kbd>←</kbd><kbd>→</kbd> 제목 이동 · 문장을 누르면 그 위치부터 읽습니다. 파일은 창에 끌어다 놓아도 열립니다.</p><p class="hint tip" id="tip"></p>
+    <p class="hint" data-t-html="hint"></p><p class="hint tip" id="tip"></p>
   </div>
 </main>
-<script type="text/markdown" id="sample">
+<script type="text/markdown" id="sample-ko">
 # 연구실 서버 점검 메모
 
 2026년 11월 정기 점검 결과를 정리한 **예시 문서**입니다. 파일을 열거나 붙여 넣으면 이 내용이 바뀝니다.
@@ -187,6 +190,46 @@ zfs list -t snapshot | wc -l
 
 다음 점검은 12월 둘째 주에 진행합니다.
 </script>
+<script type="text/markdown" id="sample-en">
+# Lab Server Check Notes
+
+This is a **sample document** summarizing the November 2026 routine check. Open or paste a file to replace it.
+
+## Summary
+
+No major outages were found. However, the firmware on two GPU servers is out of date and needs an update. Disk usage on the backup server is above 80%, so old snapshots will be cleaned up by next month.
+
+## Status by server
+
+| Server | Role | Status | Action |
+|---|---|---|---|
+| gpu01 | Training | OK | Firmware update |
+| gpu02 | Training | OK | Firmware update |
+| infra01 | DNS, monitoring | OK | None |
+| backup01 | Backup | Warning | Clean up snapshots |
+
+## To do
+
+- [x] Check the UPS battery status
+- [ ] Update the BMC firmware on gpu01 and gpu02 (Nov 20~22)
+- [ ] Change the backup01 snapshot retention from 90 days → 60 days
+  - Re-check the [retention policy](https://example.com/policy) first, e.g. the rules on legal holds.
+
+## Commands used
+
+Disk usage was checked with the following commands.
+
+```bash
+df -h /srv/backup
+zfs list -t snapshot | wc -l
+```
+
+> Note: Move jobs off a server before updating its firmware. Send the downtime notice two days ahead.
+
+---
+
+The next check is in the second week of December.
+</script>
 <script>
 {
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
@@ -194,9 +237,57 @@ const store={get(k,d){try{const v=localStorage.getItem('mdr:'+k);return v==null?
   set(k,v){try{localStorage.setItem('mdr:'+k,JSON.stringify(v))}catch(e){}}};
 const synth=window.speechSynthesis||null;
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const android=/Android/i.test(navigator.userAgent),edge=/Edg\//.test(navigator.userAgent);
 const ICON={play:'<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>',pause:'<svg viewBox="0 0 24 24"><path d="M7 5h4v14H7zm6 0h4v14h-4z"/></svg>'};
+
+/* ---------- interface text (ko / en) ---------- */
+const TX={
+ko:{title:'md 낭독기',open:'파일 열기',paste:'붙여넣기',ph:'마크다운 텍스트를 여기에 붙여 넣으세요',pasteGo:'이 텍스트 읽기',close:'닫기',
+  prevH:'이전 제목',prev:'이전 문장',next:'다음 문장',nextH:'다음 제목',play:'재생',pause:'일시정지',settings:'설정 열기',
+  speed:'속도',rl:'읽기 언어',voice:'음성',defVoice:'기본 음성',tables:'표 읽기',code:'코드 읽기',
+  auto:'자동',lang:{ko:'한국어',en:'영어'},online:'온라인',other:'기타 언어',
+  toc:'목차',notRead:'읽지 않음',empty:'내용이 비어 있습니다.',img:'그림',drop:'여기에 파일을 놓으세요',
+  sample:'예시 문서 — 파일을 열거나 붙여 넣으면 바뀝니다',pasted:'붙여 넣은 텍스트',shared:'공유된 텍스트',
+  sent:'문장',left:m=>`약 ${m}분 남음`,lt1:'1분 미만 남음',done:'끝까지 읽었습니다',none:'읽을 내용이 없습니다',
+  noSynth:'이 브라우저는 음성 합성을 지원하지 않습니다. Chrome이나 Edge에서 열어 주세요.',
+  blocked:'브라우저가 음성 재생을 막았습니다. 재생 버튼을 다시 눌러 주세요.',
+  err:e=>`음성 오류(${e}) — 다음 문장으로 넘어갑니다.`,readFail:'파일을 읽지 못했습니다.',
+  noVoice:l=>`${l} 음성이 없습니다. macOS: 시스템 설정 → 손쉬운 사용 → 읽기 및 말하기 → 시스템 음성 → 음성 관리, 안드로이드: 설정 → 텍스트 음성 변환에서 내려받으세요.`,
+  hint:'<kbd>Space</kbd> 재생·일시정지 · <kbd>←</kbd><kbd>→</kbd> 문장 이동 · <kbd>Shift</kbd>+<kbd>←</kbd><kbd>→</kbd> 제목 이동 · 문장을 누르면 그 위치부터 읽습니다. 파일은 창에 끌어다 놓아도 열립니다. 문서가 한국어인지 영어인지는 자동으로 판단하며, 「읽기 언어」에서 직접 정할 수도 있습니다.',
+  tip:android?'안드로이드: Chrome으로 여세요(Edge는 음성이 나오지 않습니다). 설정 → 텍스트 음성 변환 → Google 음성 엔진 → 음성 데이터 설치에서 한국어·영어 고음질 음성을 받으면 좋아집니다. 다른 앱에서 md 파일을 「공유」해 이 앱으로 보낼 수 있고, 읽는 동안에는 화면이 꺼지지 않습니다.'
+    :edge?'Edge의 「온라인」 표시 음성(한국어 SunHi·InJoon, 영어 Ava·Andrew 등)이 가장 자연스럽습니다(인터넷 필요). 처음에 목록에 없으면 한 번 재생하면 나타납니다.'
+    :'가장 자연스러운 음성은 Microsoft Edge에서 열 때 나오는 신경망 음성입니다(인터넷 필요). Chrome에서는 macOS에서 내려받은 프리미엄 음성(Yuna, Ava 등)을 쓸 수 있고, Safari는 내려받은 음성을 보여 주지 않습니다.'},
+en:{title:'md Reader',open:'Open file',paste:'Paste',ph:'Paste Markdown text here',pasteGo:'Read this text',close:'Close',
+  prevH:'Previous heading',prev:'Previous sentence',next:'Next sentence',nextH:'Next heading',play:'Play',pause:'Pause',settings:'Open settings',
+  speed:'Speed',rl:'Reading language',voice:'Voice',defVoice:'Default voice',tables:'Read tables',code:'Read code',
+  auto:'Auto',lang:{ko:'Korean',en:'English'},online:'online',other:'Other languages',
+  toc:'Contents',notRead:'Not read',empty:'The document is empty.',img:'Image',drop:'Drop the file here',
+  sample:'Sample document — open or paste a file to replace it',pasted:'Pasted text',shared:'Shared text',
+  sent:'sentences',left:m=>`about ${m} min left`,lt1:'under 1 min left',done:'finished',none:'Nothing to read',
+  noSynth:'This browser does not support speech synthesis. Please open it in Chrome or Edge.',
+  blocked:'The browser blocked speech playback. Press play again.',
+  err:e=>`Speech error (${e}) — skipping to the next sentence.`,readFail:'Could not read the file.',
+  noVoice:l=>`No ${l} voice is installed. macOS: System Settings → Accessibility → Spoken Content → System voice → Manage Voices. Android: Settings → Text-to-speech.`,
+  hint:'<kbd>Space</kbd> play/pause · <kbd>←</kbd><kbd>→</kbd> sentence · <kbd>Shift</kbd>+<kbd>←</kbd><kbd>→</kbd> heading · Click a sentence to read from there. You can also drop a file onto the window. The document language (Korean or English) is detected automatically; you can set it under “Reading language”.',
+  tip:android?'Android: open in Chrome (Edge has no voices on Android). For better voices: Settings → Text-to-speech → Google speech engine → Install voice data. Share an md file from another app to send it here; the screen stays on while reading.'
+    :edge?'Edge’s “online” voices (Ava, Andrew, SunHi, InJoon and others) sound the most natural (internet needed). If they are missing, press play once and they appear.'
+    :'The most natural voices are the neural voices Microsoft Edge provides (internet needed). In Chrome you can use premium macOS voices you downloaded (Ava, Yuna, …); Safari does not list downloaded voices.'}};
 const st={units:[],items:[],idx:0,playing:false,done:false,token:0,utt:null,key:'',voice:null,voices:[],curEl:null,
+  text:'',name:'',sample:false,dl:'ko',
+  ui:store.get('ui',/^ko/i.test(navigator.language||'')?'ko':'en'),rlPref:store.get('rl','auto'),
   rate:+store.get('rate',1.1)||1.1,tables:!!store.get('tables',false),code:!!store.get('code',false)};
+const T=k=>TX[st.ui][k];
+{const old=store.get('voice',null);if(old&&!store.get('voice:ko',null))store.set('voice:ko',old)}
+
+/* ---------- speech rules per reading language ---------- */
+const SAY={
+ko:{done:'완료, ',table:'표. ',link:' 링크 ',range:'$1에서 $2',arrow:'에서 ',sec:'$1절',circ:n=>n+'번, ',cps:6.5,chunk:70,lang:'ko-KR'},
+en:{done:'Done, ',table:'Table. ',link:' link ',range:'$1 to $2',arrow:' to ',sec:'section $1',circ:n=>n+', ',cps:14,chunk:150,lang:'en-US'}};
+function detect(t){
+  t=t.replace(/```[\s\S]*?```/g,'').replace(/https?:\/\/\S+/g,'');
+  const h=(t.match(/[\uAC00-\uD7A3]/g)||[]).length,l=(t.match(/[A-Za-z]/g)||[]).length;
+  return h/(h+l||1)>.15?'ko':'en';
+}
 
 const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
@@ -205,7 +296,7 @@ function inl(s){
   const codes=[];
   s=s.replace(/`([^`]+)`/g,(m,c)=>{codes.push(c);return '\u0000'+(codes.length-1)+'\u0000'});
   s=esc(s.replace(/<\/?[a-zA-Z][^>]*>/g,''));
-  s=s.replace(/!\[([^\]]*)\]\([^)]*\)/g,(m,a)=>'<span class="mk">[그림'+(a?': '+a:'')+']</span>')
+  s=s.replace(/!\[([^\]]*)\]\([^)]*\)/g,(m,a)=>'<span class="mk">['+T('img')+(a?': '+a:'')+']</span>')
    .replace(/\[([^\]]+)\]\((https?:[^)\s]+)[^)]*\)/g,'<a href="$2" target="_blank" rel="noopener">$1</a>')
    .replace(/\[([^\]]+)\]\([^)]*\)/g,'<u>$1</u>')
    .replace(/\*\*([^*]+)\*\*|__([^_]+)__/g,(m,a,b)=>'<b>'+(a||b)+'</b>')
@@ -216,16 +307,17 @@ function inl(s){
 
 /* ---------- inline markdown: what gets spoken ---------- */
 function say(s){
+  const R=SAY[st.dl];
   return s.replace(/!\[[^\]]*\]\([^)]*\)/g,'')
    .replace(/\[([^\]]+)\]\([^)]*\)/g,'$1').replace(/\[([^\]]+)\]\[[^\]]*\]/g,'$1').replace(/\[\^[^\]]+\]/g,'')
-   .replace(/<https?:[^>]+>/g,' 링크 ').replace(/https?:\/\/[^\s)]+/g,' 링크 ')
+   .replace(/<https?:[^>]+>/g,R.link).replace(/https?:\/\/[^\s)]+/g,R.link)
    .replace(/<\/?[a-zA-Z][^>]*>/g,' ')
    .replace(/&nbsp;/g,' ').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&')
    .replace(/`([^`]*)`/g,'$1').replace(/\*\*|__|~~/g,'')
-   .replace(/(\S)\s*~\s*(\d)/g,'$1에서 $2')
-   .replace(/\s*(→|⇒|->|=>|⟶)\s*(?=\d)/g,'에서 ').replace(/\s*(→|⇒|->|=>|←|↔|⟶)\s*/g,', ')
-   .replace(/\s+[—–]\s+/g,', ').replace(/§\s*([\w.-]*\w)/g,'$1절')
-   .replace(/[\u2460-\u2473]/g,c=>(c.charCodeAt(0)-0x245F)+'번, ')
+   .replace(/(\S)\s*~\s*(\d)/g,R.range)
+   .replace(/\s*(→|⇒|->|=>|⟶)\s*(?=\d)/g,R.arrow).replace(/\s*(→|⇒|->|=>|←|↔|⟶)\s*/g,', ')
+   .replace(/\s+[—–]\s+/g,', ').replace(/§\s*([\w.-]*\w)/g,R.sec)
+   .replace(/[\u2460-\u2473]/g,c=>R.circ(c.charCodeAt(0)-0x245F))
    .replace(/([^\d\s])\/([^\d\s])/g,'$1 $2')
    .replace(/[·•|]/g,', ').replace(/[~*_#>`]+/g,' ')
    .replace(/[\p{Extended_Pictographic}\uFE0F\u200D]/gu,'')
@@ -234,9 +326,11 @@ function say(s){
 }
 const codeSay=l=>l.replace(/[{}()\[\];<>|$`"'\\=]+/g,' ').replace(/\s+/g,' ').trim();
 
-/* ---------- sentence splitting (links and code spans protected) ---------- */
+/* ---------- sentence splitting (links, code spans and abbreviations protected) ---------- */
+const ABBR=/\b(e\.g|i\.e|etc|vs|cf|al|approx|Fig|Figs|Eq|Eqs|Sec|No|Dr|Mr|Ms|Mrs|Prof|Inc|Ltd|Jr|Sr|St)\.(?=\s)/g;
 function sents(src){
   const tk=[];let t=src.replace(/!?\[[^\]]*\]\([^)]*\)|`[^`]*`/g,m=>{tk.push(m);return '\u0001'+(tk.length-1)+'\u0001'});
+  t=t.replace(ABBR,m=>m.replace(/\./g,'\u0003'));
   const out=[],push=p=>{if(p.length<=200){out.push(p);return}let c='';for(const w of p.split(' ')){if(c&&(c+' '+w).length>160){out.push(c);c=w}else c=c?c+' '+w:w}if(c)out.push(c)};
   t=t.replace(/\n(?=\*\*|__|[^\s:]{1,20}:\s)/g,'\u0002').replace(/(?<=[.!?。…다요])\n/g,'\u0002').replace(/\n/g,' ');
   for(const p of t.split(/\u0002|(?<=[.!?。…][*_)"'”’]*)\s+/)){
@@ -244,7 +338,7 @@ function sents(src){
     let c='';for(const w of p.split(/(?<=[,;:，])\s+/)){if(c&&(c+' '+w).length>200){push(c);c=w}else c=c?c+' '+w:w}
     if(c)push(c);
   }
-  return out.filter(s=>s.trim()).map(s=>s.replace(/\u0001(\d+)\u0001/g,(m,n)=>tk[n]));
+  return out.filter(s=>s.trim()).map(s=>s.replace(/\u0003/g,'.').replace(/\u0001(\d+)\u0001/g,(m,n)=>tk[n]));
 }
 
 /* ---------- block parser ---------- */
@@ -276,29 +370,31 @@ function parse(md,top){
 
 /* ---------- render document + build speakable units ---------- */
 function render(blocks){
-  let seq=0;const units=[],toc=[],out=[];
+  let seq=0;const units=[],toc=[],out=[],R=SAY[st.dl];
   const U=(kind,b,v,x)=>{const id=seq++;units.push(Object.assign({id,kind,b,say:v},x));return id};
   const para=(text,kind,b,pre)=>sents(text).map((s,k)=>{let v=say(s);const h=inl(s);if(!v)return h;if(pre&&!k)v=pre+v;return `<span class="s" data-u="${U(kind,b,v)}">${h}</span>`}).join(' ');
+  const tag=`<span class="tag">${T('notRead')}</span>`;
   blocks.forEach((bk,b)=>{
     const q=bk.q?' q':'';
-    if(bk.t==='h'){const v=say(bk.text),tag='h'+Math.min(6,bk.lv+1);let h=inl(bk.text);
+    if(bk.t==='h'){const v=say(bk.text),hn='h'+Math.min(6,bk.lv+1);let h=inl(bk.text);
       if(v){const id=U('h',b,v);if(bk.lv<=3)toc.push({id,lv:bk.lv,text:v});h=`<span class="s" data-u="${id}">${h}</span>`}
-      out.push(`<${tag} class="l${bk.lv}${q}">${h}</${tag}>`)}
+      out.push(`<${hn} class="l${bk.lv}${q}">${h}</${hn}>`)}
     else if(bk.t==='p')out.push(`<p class="${q}">${para(bk.text,'p',b)}</p>`);
     else if(bk.t==='li'){const mk=bk.chk!=null?`<span class="cb${bk.chk?' on':''}"></span>`:`<span class="mk">${bk.mk?esc(bk.mk):'•'}</span>`;
-      out.push(`<div class="li${q}" style="--d:${bk.d}">${mk}<div>${para(bk.text,'p',b,bk.chk?'완료, ':'')}</div></div>`)}
+      out.push(`<div class="li${q}" style="--d:${bk.d}">${mk}<div>${para(bk.text,'p',b,bk.chk?R.done:'')}</div></div>`)}
     else if(bk.t==='table'){const head=bk.head.map(say),n=head.filter(Boolean);
-      const hid=n.length?U('table',b,'표. '+n.join(', ')):null;
+      const hid=n.length?U('table',b,R.table+n.join(', ')):null;
       const rows=bk.rows.map(r=>{const first=say(r[0]||''),rest=r.slice(1).map((c,k)=>{const v=say(c);return v?(head[k+1]?head[k+1]+' '+v:v):''}).filter(Boolean).join(', ');
         const v=[first,rest].filter(Boolean).join('. ');const id=v?U('table',b,v):null;
         return `<tr${id!=null?` data-u="${id}"`:''}>${bk.head.map((x,k)=>`<td>${inl(r[k]||'')}</td>`).join('')}</tr>`}).join('');
-      out.push(`<div class="tbl${q}"><span class="tag">읽지 않음</span><table><thead><tr${hid!=null?` data-u="${hid}"`:''}>${bk.head.map(h=>`<th>${inl(h)}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>`)}
+      out.push(`<div class="tbl${q}">${tag}<table><thead><tr${hid!=null?` data-u="${hid}"`:''}>${bk.head.map(h=>`<th>${inl(h)}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>`)}
     else if(bk.t==='code'){const lines=bk.text.split('\n').map(l=>{const v=codeSay(l);return v?`<span class="s" data-u="${U('code',b,v)}">${esc(l)}</span>`:esc(l)});
-      out.push(`<pre class="cd${q}"><span class="tag">읽지 않음</span><code>${lines.join('\n')}</code></pre>`)}
+      out.push(`<pre class="cd${q}">${tag}<code>${lines.join('\n')}</code></pre>`)}
     else if(bk.t==='hr')out.push('<hr>');
   });
-  $('#doc').innerHTML=out.join('')||'<p>내용이 비어 있습니다.</p>';
-  $('#toc').innerHTML=toc.length>1?'<p class="tt">목차</p>'+toc.map(t=>`<a href="#" class="t${t.lv}" data-j="${t.id}">${esc(t.text)}</a>`).join(''):'';
+  const doc=$('#doc');doc.lang=st.dl;
+  doc.innerHTML=out.join('')||`<p>${T('empty')}</p>`;
+  $('#toc').innerHTML=toc.length>1?`<p class="tt">${T('toc')}</p>`+toc.map(t=>`<a href="#" class="t${t.lv}" data-j="${t.id}">${esc(t.text)}</a>`).join(''):'';
   st.units=units;
 }
 
@@ -326,11 +422,12 @@ function prog(){
   const n=st.items.length,i=st.idx;
   $('#fill').style.width=n?((i+(st.done?1:0))/n*100)+'%':'0';
   let c=0;for(let k=i;k<n;k++)c+=st.items[k].say.length;
-  const m=Math.round(c/(6.5*st.rate)/60);
-  $('#pos').textContent=n?`${i+1} / ${n} 문장 · ${st.done?'끝까지 읽었습니다':m<1?'1분 미만 남음':'약 '+m+'분 남음'}`:'읽을 내용이 없습니다';
+  const m=Math.round(c/(SAY[st.dl].cps*st.rate)/60);
+  $('#pos').textContent=n?`${i+1} / ${n} ${T('sent')} · ${st.done?T('done'):m<1?T('lt1'):T('left')(m)}`:T('none');
 }
-function ui(){const b=$('#play');b.innerHTML=st.playing?ICON.pause:ICON.play;b.setAttribute('aria-label',st.playing?'일시정지':'재생');b.title=(st.playing?'일시정지':'재생')+' (Space)';awake(st.playing)}
-function msg(t){const m=$('#msg');m.textContent=t||'';m.hidden=!t}
+function ui(){const b=$('#play'),k=st.playing?'pause':'play';b.innerHTML=ICON[k];b.setAttribute('aria-label',T(k));b.title=T(k)+' (Space)';awake(st.playing)}
+let msgKey=null;
+function msg(t,key){msgKey=key||null;const m=$('#msg');m.textContent=t||'';m.hidden=!t}
 
 /* ---------- speech ---------- */
 const isNet=v=>!!v&&(!v.localService||/online|natural|google/i.test(v.name));
@@ -349,29 +446,29 @@ function speakAt(i){
   if(!st.items.length)return;
   st.idx=Math.max(0,Math.min(i,st.items.length-1));st.done=false;mark(true);
   if(!st.playing||!synth)return;
-  const tok=++st.token,busy=synth.speaking||synth.pending;
+  const tok=++st.token,busy=synth.speaking||synth.pending,R=SAY[st.dl];
   synth.cancel();
-  const it=st.items[st.idx],parts=isNet(st.voice)?chunk(it.say,Math.round(70*st.rate)):[it.say];let pi=0;
+  const it=st.items[st.idx],parts=isNet(st.voice)?chunk(it.say,Math.round(R.chunk*st.rate)):[it.say];let pi=0;
   const after=()=>{const nx=st.items[st.idx+1];
     if(!nx){st.playing=false;st.done=true;ui();prog();return}
     const gap=it.kind==='h'?450:nx.b!==it.b?180:0;
     setTimeout(()=>{if(tok===st.token&&st.playing)speakAt(st.idx+1)},gap)};
   const part=()=>{
     const u=new SpeechSynthesisUtterance(parts[pi]);
-    if(st.voice){u.voice=st.voice;u.lang=st.voice.lang}else u.lang='ko-KR';
+    if(st.voice){u.voice=st.voice;u.lang=st.voice.lang}else u.lang=R.lang;
     u.rate=st.rate;
     u.onstart=()=>{if(!st.reloaded){st.reloaded=true;setTimeout(loadVoices,800)}};
     u.onend=()=>{if(tok!==st.token||!st.playing)return;if(++pi<parts.length)part();else after()};
     u.onerror=e=>{if(tok!==st.token||e.error==='interrupted'||e.error==='canceled')return;
-      if(e.error==='not-allowed'){pause();msg('브라우저가 음성 재생을 막았습니다. 재생 버튼을 다시 눌러 주세요.');return}
-      msg('음성 오류('+e.error+') — 다음 문장으로 넘어갑니다.');setTimeout(()=>{if(tok===st.token&&st.playing)speakAt(st.idx+1)},300)};
+      if(e.error==='not-allowed'){pause();msg(T('blocked'));return}
+      msg(T('err')(e.error));setTimeout(()=>{if(tok===st.token&&st.playing)speakAt(st.idx+1)},300)};
     st.utt=u;synth.speak(u);
   };
   const go=()=>{if(tok===st.token&&st.playing){synth.resume();part()}};
   busy?setTimeout(go,40):go();
 }
 function play(){
-  if(!synth){msg('이 브라우저는 음성 합성을 지원하지 않습니다. Safari나 Chrome에서 열어 주세요.');return}
+  if(!synth){msg(T('noSynth'),'noSynth');return}
   if(!st.items.length)return;
   if(st.done){st.done=false;st.idx=0}
   msg('');st.playing=true;ui();speakAt(st.idx);
@@ -385,30 +482,69 @@ function jumpHead(dir){
   if(k>=0&&k<I.length)speakAt(k);else if(dir<0)speakAt(0);
 }
 
-/* ---------- voices ---------- */
+/* ---------- voices (chosen per reading language) ---------- */
 function loadVoices(){
   if(!synth)return;
   const vs=synth.getVoices();if(!vs.length)return;
   st.voices=vs;
-  const ko=vs.filter(v=>/^ko/i.test(v.lang)),other=vs.filter(v=>!/^ko/i.test(v.lang));
-  const score=v=>(/natural/i.test(v.name)?10:/online/i.test(v.name)?6:0)+(/sunhi/i.test(v.name)?1:0)+(/premium|프리미엄/i.test(v.name)?4:/enhanced|향상/i.test(v.name)?3:0)+(/yuna|유나/i.test(v.name)?1:0)+(v.localService?1:0);
-  const saved=store.get('voice','');
-  st.voice=vs.find(v=>v.voiceURI===saved)||ko.slice().sort((a,b)=>score(b)-score(a))[0]||vs.find(v=>v.default)||null;
-  const opt=v=>`<option value="${esc(v.voiceURI)}"${v===st.voice?' selected':''}>${esc(v.name.replace(/^Microsoft\s+/,'').replace(/\s*-\s*Korean.*$/,''))}${isNet(v)?' · 온라인':''}${/^ko/i.test(v.lang)?'':' ('+esc(v.lang)+')'}</option>`;
-  $('#voice').innerHTML=(ko.length?`<optgroup label="한국어">${ko.map(opt).join('')}</optgroup>`:'')+`<optgroup label="기타 언어">${other.map(opt).join('')}</optgroup>`;
-  if(!ko.length)msg('한국어 음성이 없습니다. 시스템 설정 → 손쉬운 사용 → 읽기 및 말하기 → 시스템 음성 → 음성 관리에서 한국어(Yuna 등)를 내려받으세요.');
+  const dl=st.dl,re=new RegExp('^'+dl,'i');
+  const mine=vs.filter(v=>re.test(v.lang)),other=vs.filter(v=>!re.test(v.lang));
+  const fav=dl==='ko'?/sunhi|yuna|유나/i:/ava|andrew|aria|jenny|samantha/i;
+  const score=v=>(/natural/i.test(v.name)?10:/online/i.test(v.name)?6:0)+(/premium|프리미엄/i.test(v.name)?4:/enhanced|향상/i.test(v.name)?3:0)
+    +(fav.test(v.name)?1:0)+(v.localService?1:0)+(dl==='en'&&/en-US/i.test(v.lang)?1:0);
+  const saved=store.get('voice:'+dl,'');
+  st.voice=vs.find(v=>v.voiceURI===saved)||mine.slice().sort((a,b)=>score(b)-score(a))[0]||null;
+  const nm=v=>v.name.replace(/^Microsoft\s+/,'').replace(/\s+Online \(Natural\)/i,'').replace(/\s*-\s*[^-]*\([^)]*\)\s*$/,'');
+  const opt=v=>`<option value="${esc(v.voiceURI)}"${v===st.voice?' selected':''}>${esc(nm(v))}${isNet(v)?' · '+T('online'):''}${/^ko-KR$/i.test(v.lang)?'':' ('+esc(v.lang)+')'}</option>`;
+  $('#voice').innerHTML=(st.voice?'':`<option value="">${T('defVoice')}</option>`)+(mine.length?`<optgroup label="${T('lang')[dl]}">${mine.map(opt).join('')}</optgroup>`:'')+`<optgroup label="${T('other')}">${other.map(opt).join('')}</optgroup>`;
+  if(!mine.length)msg(T('noVoice')(T('lang')[dl]),'noVoice');else if(msgKey==='noVoice')msg('');
+}
+
+/* ---------- reading language ---------- */
+function fillRl(){
+  const det=detect(st.text);
+  $('#rl').innerHTML=[['auto',`${T('auto')} (${T('lang')[det]})`],['ko',T('lang').ko],['en',T('lang').en]]
+    .map(([v,l])=>`<option value="${v}"${v===st.rlPref?' selected':''}>${l}</option>`).join('');
+}
+/* re-render the current document, keeping the reading position */
+function rerender(){
+  const keep=st.items[st.idx]?st.items[st.idx].id:0,was=st.playing;if(was)pause();
+  st.dl=st.rlPref==='auto'?detect(st.text):st.rlPref;
+  render(parse(st.text,true));setItems(keep);mark(false);fillRl();loadVoices();
+  if(was)play();
+}
+
+/* ---------- interface language ---------- */
+function applyUi(){
+  const L=st.ui;document.documentElement.lang=L;document.title=T('title');
+  $$('[data-t]').forEach(e=>e.textContent=T(e.dataset.t));
+  $$('[data-t-html]').forEach(e=>e.innerHTML=T(e.dataset.tHtml));
+  $$('[data-t-ph]').forEach(e=>e.placeholder=T(e.dataset.tPh));
+  $$('[data-t-aria]').forEach(e=>{const t=T(e.dataset.tAria);e.setAttribute('aria-label',t);e.title=t+(e.dataset.k?` (${e.dataset.k})`:'')});
+  $('#toc').setAttribute('aria-label',T('toc'));document.body.dataset.drop=T('drop');
+  $('#uiKo').setAttribute('aria-pressed',L==='ko');$('#uiEn').setAttribute('aria-pressed',L==='en');
+  $('#tip').textContent=T('tip');
+  if(!$('#voice').options.length||!$('#voice').value)$('#voice').innerHTML=`<option value="">${T('defVoice')}</option>`;
+  if(msgKey==='noSynth')msg(T('noSynth'),'noSynth');
+  ui();
+}
+function setUi(L){
+  if(L===st.ui)return;st.ui=L;store.set('ui',L);applyUi();
+  if(st.sample)loadSample();else{rerender();$('#fname').textContent=st.name}
 }
 
 /* ---------- loading documents ---------- */
 function loadDoc(text,name,sample){
-  pause();st.key=name+':'+text.length;st.done=false;
+  pause();st.text=text;st.name=name;st.sample=!!sample;st.key=name+':'+text.length;st.done=false;
+  st.dl=st.rlPref==='auto'?detect(text):st.rlPref;
   render(parse(text,true));
-  $('#fname').textContent=sample?'예시 문서 — 파일을 열거나 붙여 넣으면 바뀝니다':name;
+  $('#fname').textContent=sample?T('sample'):name;
   setItems(+store.get('pos:'+st.key,0)||0);
-  scrollTo(0,0);mark(st.idx>0);
+  scrollTo(0,0);mark(st.idx>0);fillRl();loadVoices();
   if(!sample)store.set('last',{text:text.length<1500000?text:'',name});
 }
-function openFile(f){if(!f)return;f.text().then(t=>loadDoc(t,f.name)).catch(()=>msg('파일을 읽지 못했습니다.'))}
+const loadSample=()=>loadDoc($('#sample-'+st.ui).textContent.replace(/^\n/,''),'sample-'+st.ui,true);
+function openFile(f){if(!f)return;f.text().then(t=>loadDoc(t,f.name)).catch(()=>msg(T('readFail')))}
 
 /* ---------- events ---------- */
 $('#play').onclick=toggle;
@@ -416,15 +552,18 @@ $('#prev').onclick=()=>speakAt(st.idx-1);
 $('#next').onclick=()=>speakAt(st.idx+1);
 $('#prevH').onclick=()=>jumpHead(-1);
 $('#nextH').onclick=()=>jumpHead(1);
+$('#uiKo').onclick=()=>setUi('ko');
+$('#uiEn').onclick=()=>setUi('en');
 $('#file').onchange=e=>{openFile(e.target.files[0]);e.target.value=''};
 $('#pasteBtn').onclick=()=>{const p=$('#paste');p.hidden=!p.hidden;if(!p.hidden)$('#pasteTa').focus()};
 $('#pasteX').onclick=()=>{$('#paste').hidden=true};
-$('#pasteGo').onclick=()=>{const t=$('#pasteTa').value;if(!t.trim())return;loadDoc(t,'붙여 넣은 텍스트');$('#paste').hidden=true};
+$('#pasteGo').onclick=()=>{const t=$('#pasteTa').value;if(!t.trim())return;loadDoc(t,T('pasted'));$('#paste').hidden=true};
 const rate=$('#rate'),rateV=$('#rateV');
 rate.value=st.rate;rateV.textContent=st.rate.toFixed(2)+'×';
 rate.oninput=()=>{rateV.textContent=(+rate.value).toFixed(2)+'×'};
 rate.onchange=()=>{st.rate=+rate.value;store.set('rate',st.rate);prog();if(st.playing)speakAt(st.idx)};
-$('#voice').onchange=e=>{st.voice=st.voices.find(v=>v.voiceURI===e.target.value)||null;store.set('voice',e.target.value);if(st.playing)speakAt(st.idx)};
+$('#rl').onchange=e=>{st.rlPref=e.target.value;store.set('rl',st.rlPref);rerender()};
+$('#voice').onchange=e=>{st.voice=st.voices.find(v=>v.voiceURI===e.target.value)||null;store.set('voice:'+st.dl,e.target.value);if(st.playing)speakAt(st.idx)};
 const opt=(id,k)=>{const c=$(id);c.checked=st[k];c.onchange=()=>{const keep=st.items[st.idx]?st.items[st.idx].id:0;st[k]=c.checked;store.set(k,c.checked);setItems(keep);mark(false);if(st.playing)speakAt(st.idx)}};
 opt('#tab','tables');opt('#cod','code');
 $('#doc').addEventListener('click',e=>{
@@ -446,34 +585,31 @@ addEventListener('dragover',e=>e.preventDefault());
 addEventListener('drop',e=>{e.preventDefault();dc=0;document.body.classList.remove('drag');openFile(e.dataTransfer.files[0])});
 addEventListener('pagehide',()=>{if(synth)synth.cancel()});
 new ResizeObserver(()=>document.documentElement.style.setProperty('--bh',$('#bar').offsetHeight+'px')).observe($('#bar'));
-
-/* ---------- start ---------- */
-ui();
-if(synth){loadVoices();synth.addEventListener?synth.addEventListener('voiceschanged',loadVoices):synth.onvoiceschanged=loadVoices}
-else msg('이 브라우저는 음성 합성을 지원하지 않습니다. Safari나 Chrome에서 열어 주세요.');
-const last=store.get('last',null);
-if(last&&last.text)loadDoc(last.text,last.name);else loadDoc($('#sample').textContent.replace(/^\n/,''),'예시',true);
-window.__mdr=st;
-
-/* ---------- app: install, offline, open-with, share, keep screen on ---------- */
-const android=/Android/i.test(navigator.userAgent),edge=/Edg\//.test(navigator.userAgent);
-$('#tip').textContent=android
-  ?'안드로이드: Chrome으로 여세요(Edge는 음성이 나오지 않습니다). 음성은 설정 → 텍스트 음성 변환 → Google 음성 엔진 → 음성 데이터 설치 → 한국어에서 고음질 음성을 받으면 좋아집니다. 다른 앱에서 md 파일을 「공유」해 이 앱으로 보낼 수 있고, 읽는 동안에는 화면이 꺼지지 않습니다.'
-  :edge?'Edge의 「온라인」 표시 음성(SunHi·InJoon)이 가장 자연스럽습니다(인터넷 필요). 처음에 목록에 없으면 한 번 재생하면 나타납니다.'
-  :'가장 자연스러운 음성은 Microsoft Edge에서 열 때 나오는 신경망 음성(SunHi·InJoon, 인터넷 필요)입니다. Chrome에서는 macOS에서 내려받은 Yuna 프리미엄 음성을 쓸 수 있고, Safari는 내려받은 음성을 보여 주지 않습니다.';
 $('#setBtn').onclick=()=>{const on=document.body.classList.toggle('showset');$('#setBtn').setAttribute('aria-expanded',on)};
-if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))navigator.serviceWorker.register('sw.js').catch(()=>{});
-if('launchQueue' in window)launchQueue.setConsumer(async p=>{if(p.files&&p.files.length){const h=p.files[0];openFile(await h.getFile())}});
-if(/[?&]shared=1/.test(location.search)&&'caches' in window){
-  caches.open('mdr-share').then(c=>c.match('./__shared').then(r=>{if(!r)return;
-    return r.text().then(t=>{const n=decodeURIComponent(r.headers.get('x-name')||'공유된 텍스트');if(t.trim())loadDoc(t,n);return c.delete('./__shared')})}))
-  .finally(()=>history.replaceState(null,'',location.pathname));
-}
+
+/* ---------- keep the screen on while reading ---------- */
 let wl=null;
 async function awake(on){try{
   if(on&&!wl&&'wakeLock' in navigator&&document.visibilityState==='visible'){wl=await navigator.wakeLock.request('screen');wl.addEventListener('release',()=>{wl=null})}
   else if(!on&&wl){const w=wl;wl=null;await w.release()}}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&st.playing)awake(true)});
+
+/* ---------- start ---------- */
+applyUi();
+if(synth){synth.addEventListener?synth.addEventListener('voiceschanged',loadVoices):synth.onvoiceschanged=loadVoices}
+else msg(T('noSynth'),'noSynth');
+const last=store.get('last',null);
+if(last&&last.text)loadDoc(last.text,last.name);else loadSample();
+window.__mdr=st;
+
+/* ---------- app: install, offline, open-with, share ---------- */
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))navigator.serviceWorker.register('sw.js').catch(()=>{});
+if('launchQueue' in window)launchQueue.setConsumer(async p=>{if(p.files&&p.files.length){const h=p.files[0];openFile(await h.getFile())}});
+if(/[?&]shared=1/.test(location.search)&&'caches' in window){
+  caches.open('mdr-share').then(c=>c.match('./__shared').then(r=>{if(!r)return;
+    return r.text().then(t=>{const n=r.headers.get('x-name');if(t.trim())loadDoc(t,n?decodeURIComponent(n):T('shared'));return c.delete('./__shared')})}))
+  .finally(()=>history.replaceState(null,'',location.pathname));
+}
 }
 </script>
 </body>
