@@ -1,8 +1,8 @@
 /* md 낭독기 service worker: offline cache + Android share target */
-const VERSION = 'mdr-v2';
+const VERSION = 'mdr-v3';
 const CORE = ['./', './index.html', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png',
-  './icons/apple-touch-icon.png', './icons/favicon.png', './icons/ainl-logo.png'];
+  './icons/apple-touch-icon.png', './icons/favicon.png', './icons/ainl-mark.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));
