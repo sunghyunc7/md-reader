@@ -245,7 +245,7 @@ const TX={
 ko:{title:'md 낭독기',open:'파일 열기',paste:'붙여넣기',ph:'마크다운 텍스트를 여기에 붙여 넣으세요',pasteGo:'이 텍스트 읽기',close:'닫기',
   prevH:'이전 제목',prev:'이전 문장',next:'다음 문장',nextH:'다음 제목',play:'재생',pause:'일시정지',settings:'설정 열기',
   speed:'속도',rl:'읽기 언어',voice:'음성',defVoice:'기본 음성',tables:'표 읽기',code:'코드 읽기',
-  auto:'자동',lang:{ko:'한국어',en:'영어'},online:'온라인',other:'기타 언어',
+  auto:'자동',lang:{ko:'한국어',en:'영어'},online:'온라인',other:'기타 언어',more:n=>`모든 음성 보기 (숨긴 ${n}개)`,fewer:'추천 음성만 보기',
   toc:'목차',notRead:'읽지 않음',empty:'내용이 비어 있습니다.',img:'그림',drop:'여기에 파일을 놓으세요',
   sample:'예시 문서 — 파일을 열거나 붙여 넣으면 바뀝니다',pasted:'붙여 넣은 텍스트',shared:'공유된 텍스트',
   sent:'문장',left:m=>`약 ${m}분 남음`,lt1:'1분 미만 남음',done:'끝까지 읽었습니다',none:'읽을 내용이 없습니다',
@@ -260,7 +260,7 @@ ko:{title:'md 낭독기',open:'파일 열기',paste:'붙여넣기',ph:'마크다
 en:{title:'md Reader',open:'Open file',paste:'Paste',ph:'Paste Markdown text here',pasteGo:'Read this text',close:'Close',
   prevH:'Previous heading',prev:'Previous sentence',next:'Next sentence',nextH:'Next heading',play:'Play',pause:'Pause',settings:'Open settings',
   speed:'Speed',rl:'Reading language',voice:'Voice',defVoice:'Default voice',tables:'Read tables',code:'Read code',
-  auto:'Auto',lang:{ko:'Korean',en:'English'},online:'online',other:'Other languages',
+  auto:'Auto',lang:{ko:'Korean',en:'English'},online:'online',other:'Other languages',more:n=>`Show all voices (${n} hidden)`,fewer:'Show recommended voices only',
   toc:'Contents',notRead:'Not read',empty:'The document is empty.',img:'Image',drop:'Drop the file here',
   sample:'Sample document — open or paste a file to replace it',pasted:'Pasted text',shared:'Shared text',
   sent:'sentences',left:m=>`about ${m} min left`,lt1:'under 1 min left',done:'finished',none:'Nothing to read',
@@ -483,23 +483,32 @@ function jumpHead(dir){
 }
 
 /* ---------- voices (chosen per reading language) ---------- */
+/* macOS novelty voices (old multilingual engine) — unusable for reading documents, hidden unless asked */
+const NOVELTY=/^(Eddy|Flo|Grandma|Grandpa|Reed|Rocko|Sandy|Shelley|Albert|Bad News|Bahh|Bells|Boing|Bubbles|Cellos|Good News|Jester|Organ|Superstar|Trinoids|Whisper|Wobble|Zarvox|Junior|Ralph|Kathy|Fred)\b/i;
 function loadVoices(){
   if(!synth)return;
   const vs=synth.getVoices();if(!vs.length)return;
   st.voices=vs;
-  const dl=st.dl,re=new RegExp('^'+dl,'i');
+  const dl=st.dl,re=new RegExp('^'+dl,'i'),ok=v=>!NOVELTY.test(v.name);
   const us=v=>/^en[-_]US/i.test(v.lang);
-  const mine=vs.filter(v=>re.test(v.lang)).sort((a,b)=>dl==='en'?us(b)-us(a):0),other=vs.filter(v=>!re.test(v.lang));
+  const fav=dl==='ko'?/sunhi|yuna|유나/i:/ava|andrew|aria|jenny|samantha/i;
+  /* ranking: Edge neural > Google network voice > premium > enhanced > the rest */
+  const score=v=>(/natural/i.test(v.name)?10:/online/i.test(v.name)?6:/^google/i.test(v.name)?5:0)+(/premium|프리미엄/i.test(v.name)?4:/enhanced|향상/i.test(v.name)?3:0)
+    +(fav.test(v.name)?1:0)+(v.localService?1:0);
+  /* best voices first: (English: American first) then by ranking */
+  const mineAll=vs.filter(v=>re.test(v.lang)).sort((a,b)=>(dl==='en'?us(b)-us(a):0)||score(b)-score(a)),mine=mineAll.filter(ok),other=vs.filter(v=>!re.test(v.lang));
   /* English defaults to an American voice; other English accents are used only when no en-US voice exists */
   const pool=dl==='en'&&mine.some(us)?mine.filter(us):mine;
-  const fav=dl==='ko'?/sunhi|yuna|유나/i:/ava|andrew|aria|jenny|samantha/i;
-  const score=v=>(/natural/i.test(v.name)?10:/online/i.test(v.name)?6:0)+(/premium|프리미엄/i.test(v.name)?4:/enhanced|향상/i.test(v.name)?3:0)
-    +(fav.test(v.name)?1:0)+(v.localService?1:0);
   const saved=store.get('voice:'+dl,'');
-  st.voice=vs.find(v=>v.voiceURI===saved)||pool.slice().sort((a,b)=>score(b)-score(a))[0]||null;
+  st.voice=vs.find(v=>v.voiceURI===saved)||pool.slice().sort((a,b)=>score(b)-score(a))[0]||mineAll[0]||null;
+  const shown=(st.allVoices?mineAll:mine).slice();if(st.voice&&re.test(st.voice.lang)&&!shown.includes(st.voice))shown.unshift(st.voice);
+  const hidden=mineAll.length-mine.length+other.length;
   const nm=v=>v.name.replace(/^Microsoft\s+/,'').replace(/\s+Online \(Natural\)/i,'').replace(/\s*-\s*[^-]*\([^)]*\)\s*$/,'');
   const opt=v=>`<option value="${esc(v.voiceURI)}"${v===st.voice?' selected':''}>${esc(nm(v))}${isNet(v)?' · '+T('online'):''}${/^ko-KR$/i.test(v.lang)?'':' ('+esc(v.lang)+')'}</option>`;
-  $('#voice').innerHTML=(st.voice?'':`<option value="">${T('defVoice')}</option>`)+(mine.length?`<optgroup label="${T('lang')[dl]}">${mine.map(opt).join('')}</optgroup>`:'')+`<optgroup label="${T('other')}">${other.map(opt).join('')}</optgroup>`;
+  $('#voice').innerHTML=(st.voice?'':`<option value="">${T('defVoice')}</option>`)
+    +(shown.length?`<optgroup label="${T('lang')[dl]}">${shown.map(opt).join('')}</optgroup>`:'')
+    +(st.allVoices&&other.length?`<optgroup label="${T('other')}">${other.map(opt).join('')}</optgroup>`:'')
+    +(hidden?`<option value="__all">${st.allVoices?T('fewer'):T('more')(hidden)}</option>`:'');
   if(!mine.length)msg(T('noVoice')(T('lang')[dl]),'noVoice');else if(msgKey==='noVoice')msg('');
 }
 
@@ -566,7 +575,7 @@ rate.value=st.rate;rateV.textContent=st.rate.toFixed(2)+'×';
 rate.oninput=()=>{rateV.textContent=(+rate.value).toFixed(2)+'×'};
 rate.onchange=()=>{st.rate=+rate.value;store.set('rate',st.rate);prog();if(st.playing)speakAt(st.idx)};
 $('#rl').onchange=e=>{st.rlPref=e.target.value;store.set('rl',st.rlPref);rerender()};
-$('#voice').onchange=e=>{st.voice=st.voices.find(v=>v.voiceURI===e.target.value)||null;store.set('voice:'+st.dl,e.target.value);if(st.playing)speakAt(st.idx)};
+$('#voice').onchange=e=>{if(e.target.value==='__all'){st.allVoices=!st.allVoices;loadVoices();return}st.voice=st.voices.find(v=>v.voiceURI===e.target.value)||null;store.set('voice:'+st.dl,e.target.value);if(st.playing)speakAt(st.idx)};
 const opt=(id,k)=>{const c=$(id);c.checked=st[k];c.onchange=()=>{const keep=st.items[st.idx]?st.items[st.idx].id:0;st[k]=c.checked;store.set(k,c.checked);setItems(keep);mark(false);if(st.playing)speakAt(st.idx)}};
 opt('#tab','tables');opt('#cod','code');
 $('#doc').addEventListener('click',e=>{
