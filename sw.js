@@ -1,5 +1,5 @@
 /* md 낭독기 service worker: offline cache + Android share target */
-const VERSION = 'mdr-v3';
+const VERSION = 'mdr-v4';
 const CORE = ['./', './index.html', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png',
   './icons/apple-touch-icon.png', './icons/favicon.png', './icons/ainl-mark.png'];
